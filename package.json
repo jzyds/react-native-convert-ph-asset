@@ -1,8 +1,7 @@
-
 {
   "name": "react-native-convert-ph-asset",
   "version": "1.0.0",
-  "description": "",
+  "description": "## Getting started",
   "main": "index.js",
   "homepage": "https://github.com/jzyds/react-native-convert-ph-asset",
   "scripts": {
@@ -12,8 +11,15 @@
     "react-native"
   ],
   "author": "jzyds",
-  "license": "",
+  "license": "MIT",
   "peerDependencies": {
     "react-native": "^0.41.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jzyds/react-native-convert-ph-asset.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jzyds/react-native-convert-ph-asset/issues"
   }
 }
