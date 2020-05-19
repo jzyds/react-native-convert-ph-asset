@@ -158,5 +158,75 @@ RCT_EXPORT_METHOD(convertVideoFromId:(NSDictionary *)params
     }];
 }
 
+RCT_EXPORT_METHOD(convertVideoFromIdUnaltered:(NSDictionary *)params
+                  resolver:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject) {
+    
+    // Converting the params from the user
+    NSString *assetId = [RCTConvert NSString:params[@"id"]] ?: @"";
+    AVFileType outputFileType = [RCTConvert PHFileType:params[@"convertTo"]] ?: AVFileTypeMPEG4;
+    NSString *pressetType = [RCTConvert PHCompressType:params[@"quality"]] ?: AVAssetExportPresetPassthrough;
+    
+    // Throwing some errors to the user if he is not careful enough
+    if ([assetId isEqualToString:@""]) {
+        NSError *error = [NSError errorWithDomain:@"RNGalleryManager" code: -91 userInfo:nil];
+        reject(@"Missing Parameter", @"id is mandatory", error);
+        return;
+    }
+    
+    // Getting Video Asset
+    NSArray* localIds = [NSArray arrayWithObjects: assetId, nil];
+    PHAsset * _Nullable videoAsset = [PHAsset fetchAssetsWithLocalIdentifiers:localIds options:nil].firstObject;
+    
+    // Getting information from the asset
+    NSString *mimeType = (NSString *)CFBridgingRelease(UTTypeCopyPreferredTagWithClass((__bridge CFStringRef _Nonnull)(outputFileType), kUTTagClassMIMEType));
+    CFStringRef uti = UTTypeCreatePreferredIdentifierForTag(kUTTagClassMIMEType, (__bridge CFStringRef _Nonnull)(mimeType), NULL);
+    NSString *extension = (NSString *)CFBridgingRelease(UTTypeCopyPreferredTagWithClass(uti, kUTTagClassFilenameExtension));
+    
+    // Creating output url and temp file name
+    NSURL * _Nullable temDir = [[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask].firstObject;
+    NSString *newFileName = [[NSUUID UUID] UUIDString];
+    NSString *tempName = [NSString stringWithFormat: @"%@.%@", newFileName, extension];
+    NSURL *outputUrl = [NSURL fileURLWithPath:[temDir.path stringByAppendingPathComponent:tempName]];
+
+
+    PHVideoRequestOptions *options = [[PHVideoRequestOptions alloc] init];
+    options.version = PHVideoRequestOptionsVersionCurrent;
+
+    [[PHImageManager defaultManager] requestAVAssetForVideo:videoAsset
+                                                    options:options
+                                              resultHandler:
+    ^(AVAsset * _Nullable avasset,
+      AVAudioMix * _Nullable audioMix,
+      NSDictionary * _Nullable info)
+    {
+        NSError *error;
+
+        
+        AVURLAsset *avurlasset = (AVURLAsset*) avasset;
+
+        // Write to documents folder
+
+        if ([[NSFileManager defaultManager] copyItemAtURL:avurlasset.URL
+                                                    toURL:outputUrl
+                                                    error:&error]) {
+            NSLog(@"Copied correctly");
+            
+            
+             resolve(
+                    @{
+                      @"type": @"video",
+                      @"filename": tempName ?: @"",
+                      @"mimeType": mimeType ?: @"",
+                      @"path": outputUrl.absoluteString,
+                      @"duration": @([videoAsset duration])
+                      }
+                    );
+        } else {
+            NSLog(error);
+        }
+    }];
+  }
+
 @end
   
